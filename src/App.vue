@@ -18,6 +18,12 @@
                         focused: session.timeslotID === timeslotID && isSessionFocused(sessionID) }"
               @click="session.timeslotID = timeslotID">
           </td>
+
+          <td class="focused placeholder" v-if="options.showFocusedShape && focus">
+            <div class="big shape-block-row">
+              <div class="big shape-block" v-for="session in groupedSessions(focus)[timeslotID]"/>
+            </div>
+          </td>
         </tr>
 
         <tr class="top-header">
@@ -30,6 +36,7 @@
 
         <tr v-for="participant in schedule.participants"
             :class="{ participant: true, focused: focus === participant }">
+
           <th @click="toggleFocus(participant)">
             {{participant.name}}
           </th>
@@ -39,7 +46,7 @@
             {{ schedule.timeslots[session.timeslotID] }}
           </td>
 
-          <template v-if="options.showNaiveScoring">
+          <template v-if="options.showNaiveScores">
             <td class="scoring numeric naive">
               {{ naiveScore(participant) }}
             </td>
@@ -49,6 +56,19 @@
               </span>
             </td>
           </template>
+
+          <td class="scoring" v-if="options.showMiniShapes">
+            <div class="small shape-block-row" v-for="timeslot, timeslotID in schedule.timeslots">
+              <div class="small shape-block" v-for="session in groupedSessions(participant)[timeslotID]"/>
+            </div>
+          </td>
+
+          <template v-if="options.showShapeScores">
+            <td class="scoring numeric shape">
+              {{ shapeScore(participant) }}
+            </td>
+          </template>
+
         </tr>
 
         <tr class="totals">
@@ -57,7 +77,7 @@
             {{ voteCount(sessionID) }}
           </td>
 
-          <template v-if="options.showNaiveScoring">
+          <template v-if="options.showNaiveScores">
             <td class="scoring numeric naive">
               {{ averageOverParticipants(naiveScore) }}
             </td>
@@ -65,17 +85,38 @@
               {{ averageOverParticipants(naivePercent) }}%
             </td>
           </template>
+
+          <td class="placeholder" v-if="options.showMiniShapes">
+          </td>
+
+          <template v-if="options.showShapeScores">
+            <td class="scoring numeric shape">
+              {{ averageOverParticipants(shapeScore) }}
+            </td>
+          </template>
         </tr>
 
       </table>
     </div>
 
+    <div class="complaint-pairs" v-if="options.showPairs">
+      <div v-for="participant in schedule.participants">
+        <div v-for="sessionGroup in groupedSessions(participant)">
+          <div v-for="session0, index in sessionGroup">
+            <div v-for="session1 in sessionGroup.slice(index + 1)" class="complaint">
+              ☹️ {{ participant.name }}: {{ session0.name }} vs {{ session1.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="control-panel">
       <button @click="randomizeSlots()">rand slots</button>
       <button @click="randomizeVotes()">rand votes</button>
-      <Toggle v-model="options.showNaiveScoring" label="naive" />
-      <Toggle v-model="options.showFocusedShape" label="shape" />
-      <Toggle v-model="options.showMiniShapes" label="mini" />
+      <Toggle v-model="options.showNaiveScores" label="naive" />
+      <Toggle v-model="options.showFocusedShape" label="focused shape" />
+      <Toggle v-model="options.showMiniShapes" label="mini shapes" />
       <Toggle v-model="options.showPairs" label="pairs" />
       <Toggle v-model="options.showShapeScores" label="scores" />
     </div>
@@ -95,19 +136,33 @@ import Toggle from './components/Toggle.vue';
 
 export default class App extends Vue {
   public schedule = {
-    participants: ["Sally", "Fred", "Irene", "Harry", "Prudence"].map(makeParticipant),
+    participants: ["Sally", "Fred", "Irene", "Harry", "Prudence", "Juan", "Vicky"].map(makeParticipant),
     sessions: ["👻", "👾", "🦷", "👣", "🧚🏽‍♀️", "🐋", "🌈", "🌮", "🧿", "🧷"].map(makeSession),
     timeslots: ["1:00", "2:00", "3:00", "4:00"],
   };
   public focus: Participant | null = null;
 
   public options = {
-    showNaiveScoring: false,
+    showNaiveScores: false,
     showFocusedShape: false,
     showMiniShapes: false,
     showPairs: false,
     showShapeScores: false,
   };
+
+  constructor() {
+    super();
+    setTimeout(
+      () => {
+        this.randomizeSlots();
+        this.randomizeVotes();
+        // this.options.showNaiveScores = true;
+        // this.options.showFocusedShape = true;
+        // this.options.showMiniShapes = true;
+        // this.options.showPairs = true;
+        this.options.showShapeScores = true;
+      }, 0.2);
+  }
 
   public toggleVote(participant: Participant, sessionID: number) {
     if (participant.votes.includes(sessionID)) {
@@ -134,16 +189,17 @@ export default class App extends Vue {
       .length;
   }
 
-  public averageOverParticipants(metric: (p:Participant) => number): number {
-    let sum = 0, count = 0;
+  public averageOverParticipants(metric: (p: Participant) => number): number | null {
+    let sum = 0;
+    let count = 0;
     for (const participant of this.schedule.participants) {
-      const value = metric(participant)
+      const value = metric(participant);
       if (!isNaN(value)) {
         sum += value;
         count += 1;
       }
     }
-    return (count === 0) ? undefined : Math.round(sum / count);
+    return (count === 0) ? null : Math.round(sum / count);
   }
 
   public naiveScore(participant: Participant): number {
@@ -153,6 +209,20 @@ export default class App extends Vue {
   public naivePercent(participant: Participant): number {
     return Math.round(
       this.naiveScore(participant) / participant.votes.length * 100);
+  }
+
+  public shapeScore(participant: Participant): number | null {
+    //       2 * k / (size.to_f * (k + 1))
+    const sessionCount = participant.votes.length;
+    if (sessionCount === 0) {
+      return null;
+    }
+
+    let total = 0;
+    for (const sessionGroup of this.groupedSessions(participant)) {
+      total += 2 * sessionGroup.length / (sessionCount * (sessionGroup.length + 1));
+    }
+    return Math.round(total * 100);
   }
 
   public toggleFocus(participant: Participant) {
@@ -229,7 +299,7 @@ function makeParticipant(name: string): Participant {
         background: #eee;
     }
     td.placeholder {
-      visibility: hidden;
+      background: none;
     }
     th {
       text-align: right;
@@ -287,6 +357,50 @@ function makeParticipant(name: string): Participant {
         filter: none;
       }
     }
+
+  .shape-block-row {
+    text-align: left;
+    white-space: nowrap;
+    width: 3em;
+    height: 3em;
+    padding: 0;
+    background: none;
+    &.small {
+      height: 0.2em;
+      margin-left: 0.5em;
+      margin-top: 1px;
+      position: relative;
+      top: -0.9em;
+    }
+    &.big {
+      padding-left: 2em;
+      border-left: 1px solid black;
+      margin-left: 2em;
+      margin-bottom: -0.3em;
+    }
+  }
+  .shape-block {
+    display: inline-block;
+    margin-right: 1px;
+    &.small {
+      width: 0.2em;
+      height: 0.2em;
+      background: black;
+    }
+    &.big {
+      width: 4em;
+      height: 3em;
+      background: #00BB33;
+    }
+  }
+}
+
+.complaint-pairs {
+  position: fixed;
+  right: 1em;
+  top: 1em;
+  height: 100%;
+  font-size: 120%;
 }
 
 .control-panel {
