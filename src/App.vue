@@ -39,17 +39,45 @@
             {{ schedule.timeslots[session.timeslotID] }}
           </td>
 
-          <td class="scoring numeric naive">
-            {{ naiveScore(participant) }}
+          <template v-if="options.showNaiveScoring">
+            <td class="scoring numeric naive">
+              {{ naiveScore(participant) }}
+            </td>
+            <td class="scoring numeric naive naive-percent">
+              <span v-if="participant.votes.length > 0">
+                {{ naivePercent(participant) }}%
+              </span>
+            </td>
+          </template>
+        </tr>
+
+        <tr class="totals">
+          <td class="placeholder"></td>
+          <td v-for="session, sessionID in schedule.sessions">
+            {{ voteCount(sessionID) }}
           </td>
-          <td class="scoring numeric naive naive-percent">
-            <span v-if="participant.votes.length > 0">
-              {{ naivePercent(participant )}}%
-            </span>
-          </td>
+
+          <template v-if="options.showNaiveScoring">
+            <td class="scoring numeric naive">
+              {{ averageOverParticipants(naiveScore) }}
+            </td>
+            <td class="scoring numeric naive naive-percent">
+              {{ averageOverParticipants(naivePercent) }}%
+            </td>
+          </template>
         </tr>
 
       </table>
+    </div>
+
+    <div class="control-panel">
+      <button @click="randomizeSlots()">rand slots</button>
+      <button @click="randomizeVotes()">rand votes</button>
+      <Toggle v-model="options.showNaiveScoring" label="naive" />
+      <Toggle v-model="options.showFocusedShape" label="shape" />
+      <Toggle v-model="options.showMiniShapes" label="mini" />
+      <Toggle v-model="options.showPairs" label="pairs" />
+      <Toggle v-model="options.showShapeScores" label="scores" />
     </div>
 
   </div>
@@ -57,9 +85,11 @@
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
+import Toggle from './components/Toggle.vue';
 
 @Component({
   components: {
+    Toggle,
   },
 })
 
@@ -69,7 +99,15 @@ export default class App extends Vue {
     sessions: ["👻", "👾", "🦷", "👣", "🧚🏽‍♀️", "🐋", "🌈", "🌮", "🧿", "🧷"].map(makeSession),
     timeslots: ["1:00", "2:00", "3:00", "4:00"],
   };
-  public focus?: Participant = this.schedule.participants[2];
+  public focus: Participant | null = null;
+
+  public options = {
+    showNaiveScoring: false,
+    showFocusedShape: false,
+    showMiniShapes: false,
+    showPairs: false,
+    showShapeScores: false,
+  };
 
   public toggleVote(participant: Participant, sessionID: number) {
     if (participant.votes.includes(sessionID)) {
@@ -90,6 +128,24 @@ export default class App extends Vue {
     return results;
   }
 
+  public voteCount(sessionID: number): number {
+    return this.schedule.participants
+      .filter((participant) => participant.votes.includes(sessionID))
+      .length;
+  }
+
+  public averageOverParticipants(metric: (p:Participant) => number): number {
+    let sum = 0, count = 0;
+    for (const participant of this.schedule.participants) {
+      const value = metric(participant)
+      if (!isNaN(value)) {
+        sum += value;
+        count += 1;
+      }
+    }
+    return (count === 0) ? undefined : Math.round(sum / count);
+  }
+
   public naiveScore(participant: Participant): number {
     return this.groupedSessions(participant).filter((a) => a.length > 0).length;
   }
@@ -100,15 +156,29 @@ export default class App extends Vue {
   }
 
   public toggleFocus(participant: Participant) {
-    if (this.focus === participant) {
-      this.focus = undefined;
-    } else {
-      this.focus = participant;
-    }
+    this.focus =
+      (this.focus === participant)
+        ? null
+        : participant;
   }
 
   public isSessionFocused(sessionID: number): boolean {
     return this.focus && this.focus.votes.includes(sessionID) || false;
+  }
+
+  public randomizeSlots() {
+    for (const session of this.schedule.sessions) {
+      session.timeslotID = Math.floor(Math.random() * this.schedule.timeslots.length);
+    }
+  }
+
+  public randomizeVotes() {
+    for (const participant of this.schedule.participants) {
+      const threshold = Math.random() * 0.5 + 0.1;
+      participant.votes = this.schedule.sessions
+        .map((s, index) => index)
+        .filter((x) => Math.random() < threshold);
+    }
   }
 }
 
@@ -125,14 +195,14 @@ interface Participant {
 function makeSession(name: string): Session {
   return {
     name,
-    timeslotID: Math.floor(Math.random() * 4), // undefined,
+    timeslotID: undefined,
   };
 }
 
 function makeParticipant(name: string): Participant {
   return {
     name,
-    votes: [0,1,2,3,4,5,6,7,8,9].filter((x) => Math.random() < 0.3) // [],
+    votes: [],
   };
 }
 
@@ -144,11 +214,15 @@ function makeParticipant(name: string): Participant {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 1em;
   font-size: 12px;
 }
 
 .schedule-grid {
+    td, th {
+      cursor: pointer;
+      -webkit-user-select: none;
+    }
     td {
         padding: 0;
         margin: 0;
@@ -186,13 +260,16 @@ function makeParticipant(name: string): Participant {
         background: #8800FF;
         color: white;
     }
+    .totals td,
     td.scoring {
       background: none;
-      padding-left: 1ex;
       height: 0;
-      font-weight: bold;
       font-size: 1.5em;
+    }
+    td.scoring {
+      font-weight: bold;
       &.numeric {
+        padding-left: 1ex;
         text-align: right;
       }
       &.naive-percent {
@@ -210,5 +287,27 @@ function makeParticipant(name: string): Participant {
         filter: none;
       }
     }
+}
+
+.control-panel {
+  border: 0.5px solid #ccc;
+  border-radius: 3px;
+  position: fixed;
+  font-size: 9px;
+  padding: 3px;
+  bottom: -1px;
+  left: -1px;
+  color: #999;
+  label {
+    margin-left: 1px;
+    margin-right: 1ex;
+  }
+  button {
+    color: #999;
+    font-size: 9px;
+    position: relative;
+    top: -0.2ex;
+    margin-right: 1ex;
+  }
 }
 </style>
