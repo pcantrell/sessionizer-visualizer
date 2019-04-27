@@ -65,7 +65,7 @@
 
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
-              {{ shapeScore(participant) }}
+              {{ formatFixed(shapeScore(participant), 2) }}
             </td>
           </template>
 
@@ -79,10 +79,10 @@
 
           <template v-if="options.showNaiveScores">
             <td class="scoring numeric naive">
-              {{ averageOverParticipants(naiveScore) }}
+              {{ formatFixed(averageOverParticipants(naiveScore), 1) }}
             </td>
             <td class="scoring numeric naive naive-percent">
-              {{ averageOverParticipants(naivePercent) }}%
+              {{ formatFixed(averageOverParticipants(naivePercent), 0) }}%
             </td>
           </template>
 
@@ -91,7 +91,7 @@
 
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
-              {{ averageOverParticipants(shapeScore) }}
+              {{ formatFixed(averageOverParticipants(shapeScore), 2) }}
             </td>
           </template>
         </tr>
@@ -111,6 +111,10 @@
       </div>
     </div>
 
+    <div v-if="this.bestScore > 0" class="best-score">
+      Best score: {{ this.bestScore }}
+    </div>
+
     <div class="control-panel">
       <button @click="randomizeSlots()">rand slots</button>
       <button @click="randomizeVotes()">rand votes</button>
@@ -119,6 +123,7 @@
       <Toggle v-model="options.showMiniShapes" label="mini shapes" />
       <Toggle v-model="options.showPairs" label="pairs" />
       <Toggle v-model="options.showShapeScores" label="scores" />
+      <button @click="anneal()">anneal</button>
     </div>
 
   </div>
@@ -136,8 +141,8 @@ import Toggle from './components/Toggle.vue';
 
 export default class App extends Vue {
   public schedule = {
-    participants: ["Sally", "Fred", "Irene", "Harry", "Prudence", "Juan", "Vicky"].map(makeParticipant),
-    sessions: ["👻", "👾", "🦷", "👣", "🧚🏽‍♀️", "🐋", "🌈", "🌮", "🧿", "🧷"].map(makeSession),
+    participants: ["Sally", "Fred", "Irene", "Harry", "Prudence", "Juan", "Vicky", "Yusuf", "Alvin"].map(makeParticipant),
+    sessions: ["👻", "👾", "🦷", "👣", "🧚🏽‍♀️", "🐋", "🌈", "🌮", "🧿", "🧷", "💃🏻", "🧩"].map(makeSession),
     timeslots: ["1:00", "2:00", "3:00", "4:00"],
   };
   public focus: Participant | null = null;
@@ -149,6 +154,12 @@ export default class App extends Vue {
     showPairs: false,
     showShapeScores: false,
   };
+
+  private annealing = false;
+  private bestScore = 0;
+  private bestSchedule!: Array<number | undefined>;
+  private annealingIters = 0;
+  private annealingMaxIters = 1000;
 
   constructor() {
     super();
@@ -189,17 +200,17 @@ export default class App extends Vue {
       .length;
   }
 
-  public averageOverParticipants(metric: (p: Participant) => number): number | null {
+  public averageOverParticipants(metric: (p: Participant) => number | null): number | null {
     let sum = 0;
     let count = 0;
     for (const participant of this.schedule.participants) {
       const value = metric(participant);
-      if (!isNaN(value)) {
+      if (value && !isNaN(value)) {
         sum += value;
         count += 1;
       }
     }
-    return (count === 0) ? null : Math.round(sum / count);
+    return (count === 0) ? null : sum / count;
   }
 
   public naiveScore(participant: Participant): number {
@@ -222,7 +233,13 @@ export default class App extends Vue {
     for (const sessionGroup of this.groupedSessions(participant)) {
       total += 2 * sessionGroup.length / (sessionCount * (sessionGroup.length + 1));
     }
-    return Math.round(total * 100);
+    return total;
+  }
+
+  public formatFixed(value: number | null | undefined, precision: number) {
+    if (value) {
+      return value.toFixed(precision);
+    }
   }
 
   public toggleFocus(participant: Participant) {
@@ -249,6 +266,62 @@ export default class App extends Vue {
         .map((s, index) => index)
         .filter((x) => Math.random() < threshold);
     }
+  }
+
+  public anneal() {
+    if (this.annealing) {
+      this.annealing = false;
+      this.bestSchedule.forEach((timeslotID, index) => {
+        this.schedule.sessions[index].timeslotID = timeslotID;
+      });
+      window.console.log("Reset to", this.bestScore, this.averageOverParticipants(this.shapeScore), JSON.stringify(this.extractTimeslotIDs()));
+      return;
+    }
+
+    this.annealing = true;
+    this.bestScore = this.averageOverParticipants(this.shapeScore) || 0;
+    this.bestSchedule = this.extractTimeslotIDs();
+    this.annealingIters = 0;
+    this.annealStep();
+  }
+
+  public randomIntLessThan(max: number): number {
+    return Math.floor(Math.random() * max);
+  }
+
+  public sample(array: any[]) {
+    return array[this.randomIntLessThan(array.length)];
+  }
+
+  public annealStep() {
+    if (!this.annealing) {
+      return;
+    }
+
+    const prevScore = this.averageOverParticipants(this.shapeScore) || 0;
+    const session = this.sample(this.schedule.sessions);
+    const prevTimeslotID = session.timeslotID;
+    session.timeslotID = this.randomIntLessThan(this.schedule.timeslots.length);
+
+    const score = this.averageOverParticipants(this.shapeScore) || 0;
+    if (score > this.bestScore) {
+      window.console.log("New best", score, JSON.stringify(this.extractTimeslotIDs()));
+      this.bestScore = score;
+      this.bestSchedule = this.extractTimeslotIDs();
+    } else if (score < prevScore && Math.random() < this.annealingIters / this.annealingMaxIters) {
+      session.timeslotID = prevTimeslotID;
+    }
+
+    this.annealingIters += 1;
+    if (this.annealingIters > this.annealingMaxIters) {
+      this.anneal();
+      this.anneal();
+    }
+    setTimeout(this.annealStep, 1);
+  }
+
+  public extractTimeslotIDs() {
+    return this.schedule.sessions.map((s) => s.timeslotID);
   }
 }
 
@@ -361,7 +434,7 @@ function makeParticipant(name: string): Participant {
   .shape-block-row {
     text-align: left;
     white-space: nowrap;
-    width: 3em;
+    width: 1.5em;
     height: 3em;
     padding: 0;
     background: none;
@@ -423,5 +496,9 @@ function makeParticipant(name: string): Participant {
     top: -0.2ex;
     margin-right: 1ex;
   }
+}
+
+.best-score {
+  margin-top: 2em;
 }
 </style>
