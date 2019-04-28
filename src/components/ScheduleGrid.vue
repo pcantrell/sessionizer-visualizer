@@ -1,12 +1,16 @@
 <template>
   <table :class="{ 'schedule-grid': true, 'focus-enabled': focus }">
 
+    <!-- Session header row -->
+
     <tr class="top-header">
       <td class="placeholder"></td>
       <th v-for="session in schedule.sessions">
           {{session.name}}
       </th>
     </tr>
+
+    <!-- Timeslot assignments -->
 
     <tr v-for="timeslot, timeslotID in schedule.timeslots" class="timeslot">
       <th>{{timeslot}}</th>
@@ -27,6 +31,8 @@
       </td>
     </tr>
 
+    <!-- Session header row again -->
+
     <tr class="top-header">
       <td class="placeholder"></td>
       <th v-for="session, sessionID in schedule.sessions"
@@ -34,6 +40,8 @@
           {{session.name}}
       </th>
     </tr>
+
+    <!-- Votes and scores -->
 
     <tr v-for="participant in schedule.participants"
         :class="{ participant: true, focused: focus === participant }">
@@ -71,6 +79,8 @@
       </template>
 
     </tr>
+
+    <!-- Totals votes and scores -->
 
     <tr class="totals">
       <td class="placeholder"></td>

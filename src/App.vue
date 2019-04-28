@@ -115,52 +115,50 @@ export default class App extends Vue {
     this.annealer.clear();
   }
 }
-
 </script>
 
 <style lang="scss">
-#app {
-  font-family: 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
-  margin-top: 1em;
-  font-size: 12px;
-}
-
-.complaint-pairs {
-  position: fixed;
-  right: 1em;
-  top: 1em;
-  width: 12em;
-  height: 100%;
-  font-size: 120%;
-}
-
-.control-panel {
-  $color: black;
-  $font-size: 12px;
-
-  position: fixed;
-  bottom: -1px;
-  left: -1px;
-  background: white;
-  border: 0.5px solid rgba(0,0,0,0.5);
-  box-shadow: 0px 0px 24px rgba(0,0,0,0.07);
-  border-top-right-radius: 4px;
-  font-size: $font-size;
-  padding: 6px;
-  color: $color;
-  label {
-    margin-left: 1px;
-    margin-right: 1ex;
+  #app {
+    font-family: 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #2c3e50;
+    margin-top: 1em;
+    font-size: 12px;
   }
-  button {
-    color: $color;
+
+  .complaint-pairs {
+    position: fixed;
+    right: 1em;
+    top: 1em;
+    width: 12em;
+    height: 100%;
+    font-size: 120%;
+  }
+
+  .control-panel {
+    $color: black;
+    $font-size: 12px;
+
+    position: fixed;
+    bottom: -1px;
+    left: -1px;
+    background: white;
+    border: 0.5px solid rgba(0,0,0,0.5);
+    box-shadow: 0px 0px 24px rgba(0,0,0,0.07);
+    border-top-right-radius: 4px;
     font-size: $font-size;
-    position: relative;
-    margin-right: 1ex;
+    padding: 6px;
+    color: $color;
+    label {
+      margin-left: 1px;
+      margin-right: 1ex;
+    }
+    button {
+      color: $color;
+      font-size: $font-size;
+      position: relative;
+      margin-right: 1ex;
+    }
   }
-}
-
 </style>

@@ -10,15 +10,15 @@
 </template>
 
 <script lang="ts">
-  import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue } from 'vue-property-decorator';
 
-  @Component
-  export default class Toggle extends Vue {
-    @Prop() private value!: boolean;
-    @Prop() private label!: string;
+@Component
+export default class Toggle extends Vue {
+  @Prop() private value!: boolean;
+  @Prop() private label!: string;
 
-    private id: string = "toggle-" + Math.random();
-  }
+  private id: string = "toggle-" + Math.random();
+}
 </script>
 
 <style scoped lang="scss">
