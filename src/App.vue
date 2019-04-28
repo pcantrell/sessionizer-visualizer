@@ -100,7 +100,9 @@
                 <div class="side-label">
                   Best:
                 </div>
-                {{ formatFixed(this.bestScore, 3) }}
+                <div :class="{ 'score': true, 'new-record': newRecord }">
+                  {{ formatFixed(this.bestScore, 3) }}
+                </div>
               </div>
             </td>
           </template>
@@ -139,7 +141,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import Toggle from './components/Toggle.vue';
 import Session from './model/Session';
 import Participant from './model/Participant';
@@ -197,6 +199,7 @@ export default class App extends Vue {
   private annealing = false;
   private bestScore = 0;
   private bestSchedule!: Array<number | undefined>;
+  private newRecord = false;
   private annealingIters = 0;
   private annealingMaxIters = 1000;
 
@@ -239,11 +242,6 @@ export default class App extends Vue {
       this.bestSchedule.forEach((timeslotID, index) => {
         this.schedule.sessions[index].timeslotID = timeslotID;
       });
-      window.console.log(
-        "Reset to",
-        this.bestScore,
-        this.schedule.averageScore(this.schedule.shapeScore),
-        JSON.stringify(this.extractTimeslotIDs()));
       return;
     }
 
@@ -266,10 +264,6 @@ export default class App extends Vue {
 
     const score = this.schedule.averageScore(this.schedule.shapeScore) || 0;
     if (score > this.bestScore) {
-      window.console.log(
-        "New best",
-        score,
-        JSON.stringify(this.extractTimeslotIDs()));
       this.bestScore = score;
       this.bestSchedule = this.extractTimeslotIDs();
     } else if (score < prevScore && Math.random() < this.annealingIters / this.annealingMaxIters) {
@@ -286,6 +280,15 @@ export default class App extends Vue {
 
   public extractTimeslotIDs() {
     return this.schedule.sessions.map((s) => s.timeslotID);
+  }
+
+  @Watch('bestScore')
+  public onNewBestScore(newValue: number, oldValue: number) {
+    if (oldValue) {
+      window.console.log("new record", newValue);
+      this.newRecord = false;
+      setTimeout(() => this.newRecord = true, 0.01);
+    }
   }
 }
 
@@ -375,8 +378,30 @@ export default class App extends Vue {
         font-weight: normal;
         width: 0;
         position: relative;
-        left: -100%;
+        left: -120%;
       }
+      .score {
+        display: inline-block;
+      }
+      .new-record {
+        animation: new-record-fade 0.5s;
+        border-radius: 1ex
+      }
+
+      @keyframes new-record-fade {
+        0% {
+          color: #55cc33;
+          transform: scale(1);
+        }
+        10% {
+          transform: scale(1.3, 1.4);
+        }
+        100% {
+          color: default;
+          transform: scale(1);
+        }
+      }
+
     }
     &.focus-enabled {
       td, th {
