@@ -127,10 +127,10 @@
       <button @click="schedule.clear()">clear</button>
       <button @click="schedule.randomizeSlots()">rand slots</button>
       <button @click="schedule.randomizeVotes()">rand votes</button>
+      <Toggle v-model="options.showPairs" label="pairs" />
       <Toggle v-model="options.showNaiveScores" label="naive" />
       <Toggle v-model="options.showFocusedShape" label="focused shape" />
       <Toggle v-model="options.showMiniShapes" label="mini shapes" />
-      <Toggle v-model="options.showPairs" label="pairs" />
       <Toggle v-model="options.showRanking" label="rank" />
       <button @click="schedule.randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
@@ -425,24 +425,27 @@ export default class App extends Vue {
 }
 
 .control-panel {
-  background: white;
-  border: 0.5px solid #ccc;
-  border-radius: 3px;
+  $color: black;
+  $font-size: 12px;
+
   position: fixed;
-  font-size: 9px;
-  padding: 3px;
   bottom: -1px;
   left: -1px;
-  color: #999;
+  background: white;
+  border: 0.5px solid rgba(0,0,0,0.5);
+  box-shadow: 0px 0px 24px rgba(0,0,0,0.07);
+  border-top-right-radius: 4px;
+  font-size: $font-size;
+  padding: 6px;
+  color: $color;
   label {
     margin-left: 1px;
     margin-right: 1ex;
   }
   button {
-    color: #999;
-    font-size: 9px;
+    color: $color;
+    font-size: $font-size;
     position: relative;
-    top: -0.2ex;
     margin-right: 1ex;
   }
 }
