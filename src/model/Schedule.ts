@@ -1,6 +1,6 @@
 import Session from './Session';
 import Participant from './Participant';
-import Util from '../util';
+import Util from '../helpers/util';
 
 export default class Schedule {
   public participants: Participant[];

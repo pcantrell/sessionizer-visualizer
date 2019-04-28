@@ -96,12 +96,12 @@
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
               {{ formatFixed(schedule.averageScore(schedule.shapeScore), 3) }}
-              <div class="best" v-if="this.bestScore > 0">
+              <div class="best" v-if="annealer.bestScore > 0">
                 <div class="side-label">
                   Best:
                 </div>
                 <div :class="{ 'score': true, 'new-record': newRecord }">
-                  {{ formatFixed(this.bestScore, 3) }}
+                  {{ formatFixed(annealer.bestScore, 3) }}
                 </div>
               </div>
             </td>
@@ -134,7 +134,7 @@
       <Toggle v-model="options.showRanking" label="rank" />
       <button @click="schedule.randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
-      <button @click="anneal()">anneal</button>
+      <button @click="annealer.toggle()">anneal</button>
     </div>
 
   </div>
@@ -146,7 +146,7 @@ import Toggle from './components/Toggle.vue';
 import Session from './model/Session';
 import Participant from './model/Participant';
 import Schedule from './model/Schedule';
-import Util from './util';
+import Annealer from './helpers/Annealer';
 
 @Component({
   components: {
@@ -196,12 +196,8 @@ export default class App extends Vue {
     showShapeScores: false,
   };
 
-  private annealing = false;
-  private bestScore = 0;
-  private bestSchedule!: Array<number | undefined>;
-  private newRecord = false;
-  private annealingIters = 0;
-  private annealingMaxIters = 1000;
+  public annealer = new Annealer(this.schedule, { maxIters: 1000 });
+  public newRecord = false;
 
   constructor() {
     super();
@@ -236,59 +232,17 @@ export default class App extends Vue {
     return this.focus && this.focus.votes.includes(sessionID) || false;
   }
 
-  public anneal() {
-    if (this.annealing) {
-      this.annealing = false;
-      this.bestSchedule.forEach((timeslotID, index) => {
-        this.schedule.sessions[index].timeslotID = timeslotID;
-      });
-      return;
-    }
-
-    this.annealing = true;
-    this.bestScore = this.schedule.averageScore(this.schedule.shapeScore) || 0;
-    this.bestSchedule = this.extractTimeslotIDs();
-    this.annealingIters = 0;
-    this.annealStep();
-  }
-
-  public annealStep() {
-    if (!this.annealing) {
-      return;
-    }
-
-    const prevScore = this.schedule.averageScore(this.schedule.shapeScore) || 0;
-    const session = Util.sample(this.schedule.sessions);
-    const prevTimeslotID = session.timeslotID;
-    session.timeslotID = Util.randomIntLessThan(this.schedule.timeslots.length);
-
-    const score = this.schedule.averageScore(this.schedule.shapeScore) || 0;
-    if (score > this.bestScore) {
-      this.bestScore = score;
-      this.bestSchedule = this.extractTimeslotIDs();
-    } else if (score < prevScore && Math.random() < this.annealingIters / this.annealingMaxIters) {
-      session.timeslotID = prevTimeslotID;
-    }
-
-    this.annealingIters += 1;
-    if (this.annealingIters > this.annealingMaxIters) {
-      this.anneal();
-      this.anneal();
-    }
-    setTimeout(this.annealStep, 1);
-  }
-
-  public extractTimeslotIDs() {
-    return this.schedule.sessions.map((s) => s.timeslotID);
-  }
-
-  @Watch('bestScore')
+  @Watch('annealer.bestScore')
   public onNewBestScore(newValue: number, oldValue: number) {
     if (oldValue) {
-      window.console.log("new record", newValue);
       this.newRecord = false;
       setTimeout(() => this.newRecord = true, 0.01);
     }
+  }
+
+  @Watch('schedule.participants', { deep: true })
+  public onVotesChanged(newValue: number, oldValue: number) {
+    this.annealer.clear();
   }
 }
 
@@ -384,7 +338,7 @@ export default class App extends Vue {
         display: inline-block;
       }
       .new-record {
-        animation: new-record-fade 0.5s;
+        animation: new-record-fade 1s;
         border-radius: 1ex
       }
 
@@ -393,12 +347,14 @@ export default class App extends Vue {
           color: #55cc33;
           transform: scale(1);
         }
-        10% {
-          transform: scale(1.3, 1.4);
+        3% {
+          transform: scale(1.2, 1.4);
+        }
+        40% {
+          transform: scale(1);
         }
         100% {
           color: default;
-          transform: scale(1);
         }
       }
 
