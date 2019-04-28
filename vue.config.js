@@ -4,5 +4,7 @@ module.exports = {
       args[0].hash = true
       return args
     })
-  }
+  },
+
+  publicPath: '/sessionizer-visualizer/'
 }
