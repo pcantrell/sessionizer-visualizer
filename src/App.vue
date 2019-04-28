@@ -24,6 +24,37 @@
       <button @click="annealer.toggle()" :class="{ active: annealer.running }">anneal</button>
     </div>
 
+    <div class="links">
+      <div class="link">
+        <a href="https://github.com/pcantrell/sessionizer-visualizer">Source code for this visualization</a>
+      </div>
+      <div class="link">
+        <a href="https://youtu.be/QsMWMRzBsG0?t=23">Paul’s 2014 talk on scheduling with simulated annealing</a>
+        (uses the “naive” scoring below)
+      </div>
+      <div class="link">
+        Paul’s 2019 talk on scheduler improvements, where this visualization originates: <b>forthcoming!</b>
+      </div>
+      <div class="link">
+        <a href="https://sessions.minnestar.org">The real-life Minnebar sessionizer</a>
+        and
+        <a href="https://sessions.minnestar.org/schedule?force=1">a generated schedule</a>
+      </div>
+      <div class="link">
+        <a href="https://github.com/minnestar/sessionizer">Sessionizer source code</a>
+      </div>
+      <div class="link">
+        <a href="https://github.com/minnestar/sessionizer/tree/master/src/lib/scheduling">Source code for the real-life scheduler</a>
+        (warning: may cause eye bleed)
+      </div>
+    </div>
+
+    <div class="opsipod">
+      <a class="imglink" href="https://innig.net">
+        <div class="innig-logo-mini"></div>
+      </a>
+    </div>
+
   </div>
 </template>
 
@@ -116,6 +147,10 @@ export default class App extends Vue {
     font-size: 12px;
   }
 
+  a {
+    text-decoration: none;
+  }
+
   .control-panel {
     $color: black;
     $font-size: 12px;
@@ -130,10 +165,12 @@ export default class App extends Vue {
     font-size: $font-size;
     padding: 6px;
     color: $color;
+
     label {
       margin-left: 1px;
       margin-right: 1ex;
     }
+
     button {
       color: $color;
       font-size: $font-size;
@@ -149,6 +186,28 @@ export default class App extends Vue {
         font-weight: bold;
         border-color: black;
       }
+    }
+  }
+
+  .links {
+    margin: 3em 0 6em 2em;
+    .link {
+      margin-top: 0.5em;
+    }
+  }
+
+  .opsipod {
+    position: fixed;
+    right: 12px;
+    bottom: 0px;
+    .innig-logo-mini {
+      content: "";
+      display: inline-block;
+      background-image: url("https://innig.net/images/innig_FFFFFF@2x.png");
+      background-size: 100%;
+      background-repeat: no-repeat;
+      width: 25px;
+      height: 47px;
     }
   }
 </style>
