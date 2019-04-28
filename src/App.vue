@@ -24,6 +24,17 @@
       <button @click="annealer.toggle()" :class="{ active: annealer.running }">anneal</button>
     </div>
 
+    <div class="hints">
+      <div class="hint">Click on the lower grid to vote for sessions.</div>
+      <div class="hint">Click on the upper grid to schedule sessions.</div>
+      <div class="hint">Click a name to focus / unfocus on that participant’s schedule.</div>
+      <div class="hint">Click “rand slots” and “rand votes” below to generate random schedule/votes.</div>
+      <div class="hint">Use checkboxes below to analyze the schedule in different ways.</div>
+      <div class="hint">(Note: “focused shape and “focused rank” are only visible when you select a person.)</div>
+      <div class="hint">Click “anneal” for a dramatic reenactment of the scheduler in action. Click again to stop.</div>
+      <div class="hint">(This visualization uses a simplified but representative version of the actual algorithm.)</div>
+    </div>
+
     <div class="links">
       <div class="link">
         <a href="https://github.com/pcantrell/sessionizer-visualizer">Source code for this visualization</a>
@@ -147,6 +158,10 @@ export default class App extends Vue {
     font-size: 12px;
   }
 
+  body {
+    padding-bottom: 4em;
+  }
+
   a {
     text-decoration: none;
   }
@@ -189,8 +204,11 @@ export default class App extends Vue {
     }
   }
 
+  .hints, .links {
+    margin: 2em;
+  }
+
   .links {
-    margin: 3em 0 6em 2em;
     .link {
       margin-top: 0.5em;
     }
