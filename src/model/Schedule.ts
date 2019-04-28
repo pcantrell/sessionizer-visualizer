@@ -92,7 +92,7 @@ export default class Schedule {
     return total;
   }
 
-  public averageOverParticipants(metric: (p: Participant) => number | null): number | null {
+  public averageScore(metric: (p: Participant) => number | null): number | null {
     let sum = 0;
     let count = 0;
     for (const participant of this.participants) {

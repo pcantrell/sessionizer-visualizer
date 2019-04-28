@@ -83,10 +83,10 @@
 
           <template v-if="options.showNaiveScores">
             <td class="scoring numeric naive">
-              {{ formatFixed(schedule.averageOverParticipants(schedule.naiveScore), 1) }}
+              {{ formatFixed(schedule.averageScore(schedule.naiveScore), 1) }}
             </td>
             <td class="scoring numeric naive naive-percent">
-              {{ formatFixed(schedule.averageOverParticipants(schedule.naivePercent), 0) }}%
+              {{ formatFixed(schedule.averageScore(schedule.naivePercent), 0) }}%
             </td>
           </template>
 
@@ -95,7 +95,7 @@
 
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
-              {{ formatFixed(schedule.averageOverParticipants(schedule.shapeScore), 3) }}
+              {{ formatFixed(schedule.averageScore(schedule.shapeScore), 3) }}
             </td>
           </template>
         </tr>
@@ -204,7 +204,7 @@ export default class App extends Vue {
       () => {
         this.schedule.randomizeSlots();
         this.schedule.randomizeVotes();
-        this.schedule.randomizeRanks();
+        // this.schedule.randomizeRanks();
         this.options.showNaiveScores = true;
         this.options.showFocusedShape = true;
         this.options.showMiniShapes = true;
@@ -240,13 +240,13 @@ export default class App extends Vue {
       window.console.log(
         "Reset to",
         this.bestScore,
-        this.schedule.averageOverParticipants(this.schedule.shapeScore),
+        this.schedule.averageScore(this.schedule.shapeScore),
         JSON.stringify(this.extractTimeslotIDs()));
       return;
     }
 
     this.annealing = true;
-    this.bestScore = this.schedule.averageOverParticipants(this.schedule.shapeScore) || 0;
+    this.bestScore = this.schedule.averageScore(this.schedule.shapeScore) || 0;
     this.bestSchedule = this.extractTimeslotIDs();
     this.annealingIters = 0;
     this.annealStep();
@@ -257,12 +257,12 @@ export default class App extends Vue {
       return;
     }
 
-    const prevScore = this.schedule.averageOverParticipants(this.schedule.shapeScore) || 0;
+    const prevScore = this.schedule.averageScore(this.schedule.shapeScore) || 0;
     const session = Util.sample(this.schedule.sessions);
     const prevTimeslotID = session.timeslotID;
     session.timeslotID = Util.randomIntLessThan(this.schedule.timeslots.length);
 
-    const score = this.schedule.averageOverParticipants(this.schedule.shapeScore) || 0;
+    const score = this.schedule.averageScore(this.schedule.shapeScore) || 0;
     if (score > this.bestScore) {
       window.console.log(
         "New best",
@@ -355,6 +355,14 @@ export default class App extends Vue {
       }
       &.naive-percent {
         width: 2.75em;
+      }
+    }
+    .totals td {
+      padding-top: 0.5em;
+      position: relative;
+      top: -3px;
+      &.scoring {
+        border-top: 0.5px solid #bbb;
       }
     }
     &.focus-enabled {
