@@ -21,7 +21,11 @@
 
           <td class="focused placeholder" v-if="options.showFocusedShape && focus">
             <div class="big shape-block-row">
-              <div class="big shape-block" v-for="session in groupedSessions(focus)[timeslotID]"/>
+              <div class="big shape-block" v-for="session in groupedSessions(focus)[timeslotID]">
+                <div class="ranking" v-if="options.showRanking">
+                  {{ focus.votes.indexOf(schedule.sessions.indexOf(session)) + 1 }}
+                </div>
+              </div>
             </div>
           </td>
         </tr>
@@ -104,7 +108,7 @@
         <div v-for="sessionGroup in groupedSessions(participant)">
           <div v-for="session0, index in sessionGroup">
             <div v-for="session1 in sessionGroup.slice(index + 1)" class="complaint">
-              ☹️ {{ participant.name }}: {{ session0.name }} vs {{ session1.name }}
+              ☹️ <b>{{ participant.name }}</b>: {{ session0.name }} vs {{ session1.name }}
             </div>
           </div>
         </div>
@@ -116,12 +120,15 @@
     </div>
 
     <div class="control-panel">
+      <button @click="clear()">clear</button>
       <button @click="randomizeSlots()">rand slots</button>
       <button @click="randomizeVotes()">rand votes</button>
       <Toggle v-model="options.showNaiveScores" label="naive" />
       <Toggle v-model="options.showFocusedShape" label="focused shape" />
       <Toggle v-model="options.showMiniShapes" label="mini shapes" />
       <Toggle v-model="options.showPairs" label="pairs" />
+      <Toggle v-model="options.showRanking" label="rank" />
+      <button @click="randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
       <button @click="anneal()">anneal</button>
     </div>
@@ -141,8 +148,31 @@ import Toggle from './components/Toggle.vue';
 
 export default class App extends Vue {
   public schedule = {
-    participants: ["Sally", "Fred", "Irene", "Harry", "Prudence", "Juan", "Vicky", "Yusuf", "Alvin"].map(makeParticipant),
-    sessions: ["👻", "👾", "🦷", "👣", "🧚🏽‍♀️", "🐋", "🌈", "🌮", "🧿", "🧷", "💃🏻", "🧩"].map(makeSession),
+    participants: [
+      "Sally",
+      "Fred",
+      "Irene",
+      "Harry",
+      "Prudence",
+      "Juan",
+      "Vicky",
+      "Yusuf",
+      "Alvin",
+    ].map(makeParticipant),
+    sessions: [
+      "👻",
+      "👾",
+      "🦷",
+      "👣",
+      "🧚🏽‍♀️",
+      "🐋",
+      "🌈",
+      "🌮",
+      "🧿",
+      "🧷",
+      "💃🏻",
+      "🧩",
+    ].map(makeSession),
     timeslots: ["1:00", "2:00", "3:00", "4:00"],
   };
   public focus: Participant | null = null;
@@ -151,6 +181,7 @@ export default class App extends Vue {
     showNaiveScores: false,
     showFocusedShape: false,
     showMiniShapes: false,
+    showRanking: false,
     showPairs: false,
     showShapeScores: false,
   };
@@ -165,13 +196,15 @@ export default class App extends Vue {
     super();
     setTimeout(
       () => {
-        this.randomizeSlots();
-        this.randomizeVotes();
+        // this.randomizeSlots();
+        // this.randomizeVotes();
+        // this.randomizeRanks();
         // this.options.showNaiveScores = true;
         // this.options.showFocusedShape = true;
         // this.options.showMiniShapes = true;
         // this.options.showPairs = true;
-        this.options.showShapeScores = true;
+        // this.options.showRanking = true;
+        // this.options.showShapeScores = true;
       }, 0.2);
   }
 
@@ -253,6 +286,15 @@ export default class App extends Vue {
     return this.focus && this.focus.votes.includes(sessionID) || false;
   }
 
+  public clear() {
+    for (const session of this.schedule.sessions) {
+      session.timeslotID = undefined;
+    }
+    for (const participant of this.schedule.participants) {
+      participant.votes = [];
+    }
+  }
+
   public randomizeSlots() {
     for (const session of this.schedule.sessions) {
       session.timeslotID = Math.floor(Math.random() * this.schedule.timeslots.length);
@@ -268,13 +310,23 @@ export default class App extends Vue {
     }
   }
 
+  public randomizeRanks() {
+    for (const participant of this.schedule.participants) {
+      this.shuffle(participant.votes);
+    }
+  }
+
   public anneal() {
     if (this.annealing) {
       this.annealing = false;
       this.bestSchedule.forEach((timeslotID, index) => {
         this.schedule.sessions[index].timeslotID = timeslotID;
       });
-      window.console.log("Reset to", this.bestScore, this.averageOverParticipants(this.shapeScore), JSON.stringify(this.extractTimeslotIDs()));
+      window.console.log(
+        "Reset to",
+        this.bestScore,
+        this.averageOverParticipants(this.shapeScore),
+        JSON.stringify(this.extractTimeslotIDs()));
       return;
     }
 
@@ -287,6 +339,18 @@ export default class App extends Vue {
 
   public randomIntLessThan(max: number): number {
     return Math.floor(Math.random() * max);
+  }
+
+  public randomInt(min: number, max: number): number {
+    return this.randomIntLessThan(max - min) + min;
+  }
+
+  public shuffle(array: any[]) {
+    array.forEach((_, index0) => {
+      const index1 = this.randomInt(index0, array.length);
+      [array[index0], array[index1]] = [array[index1], array[index0]];
+    });
+    array.push(array.pop()); // force update
   }
 
   public sample(array: any[]) {
@@ -305,7 +369,10 @@ export default class App extends Vue {
 
     const score = this.averageOverParticipants(this.shapeScore) || 0;
     if (score > this.bestScore) {
-      window.console.log("New best", score, JSON.stringify(this.extractTimeslotIDs()));
+      window.console.log(
+        "New best",
+        score,
+        JSON.stringify(this.extractTimeslotIDs()));
       this.bestScore = score;
       this.bestSchedule = this.extractTimeslotIDs();
     } else if (score < prevScore && Math.random() < this.annealingIters / this.annealingMaxIters) {
@@ -450,6 +517,13 @@ function makeParticipant(name: string): Participant {
       border-left: 1px solid black;
       margin-left: 2em;
       margin-bottom: -0.3em;
+      .ranking {
+        color: white;
+        padding-top: 0.4em;
+        text-align: center;
+        font-weight: bold;
+        font-size: 150%;
+      }
     }
   }
   .shape-block {
@@ -472,6 +546,7 @@ function makeParticipant(name: string): Participant {
   position: fixed;
   right: 1em;
   top: 1em;
+  width: 12em;
   height: 100%;
   font-size: 120%;
 }
