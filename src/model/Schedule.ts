@@ -54,7 +54,7 @@ export default class Schedule {
     const results: Session[][] = this.timeslots.map((_) => []);
     for (const sessionIndex of participant.votes) {
       const session = this.sessions[sessionIndex];
-      if (session.timeslotID !== undefined) {
+      if (session && session.timeslotID !== undefined) {
         results[session.timeslotID].push(session);
       }
     }

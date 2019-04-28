@@ -119,14 +119,16 @@
 
 <script lang="ts">
 import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
-import Schedule from '../model/Schedule';
-import Session from '../model/Session';
+
+import Schedule    from '../model/Schedule';
+import Session     from '../model/Session';
 import Participant from '../model/Participant';
+import Options     from '../model/Options';
 
 @Component
 export default class ScheduleGrid extends Vue {
   @Prop() private schedule!: Schedule;
-  @Prop() private options!: any;
+  @Prop() private options!: Options;
   @Prop() private annealerBestScore!: number;
 
   private focus: Participant | null = null;

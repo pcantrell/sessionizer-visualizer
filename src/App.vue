@@ -18,7 +18,7 @@
       <Toggle v-model="options.showNaiveScores" label="naive" />
       <Toggle v-model="options.showFocusedShape" label="focused shape" />
       <Toggle v-model="options.showMiniShapes" label="mini shapes" />
-      <Toggle v-model="options.showRanking" label="rank" />
+      <Toggle v-model="options.showRanking" label="focused rank" />
       <button @click="schedule.randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
       <button @click="annealer.toggle()">anneal</button>
@@ -35,6 +35,8 @@ import ComplaintPairs from './components/ComplaintPairs.vue';
 import Toggle         from './components/Toggle.vue';
 
 import Schedule from './model/Schedule';
+import Options  from './model/Options';
+
 import Annealer from './helpers/Annealer';
 
 @Component({
@@ -77,21 +79,14 @@ export default class App extends Vue {
     timeslots: ["1:00", "2:00", "3:00", "4:00"],
   });
 
-  public options = {
-    showNaiveScores: false,
-    showFocusedShape: false,
-    showMiniShapes: false,
-    showRanking: false,
-    showPairs: false,
-    showShapeScores: false,
-  };
+  public options = new Options();
 
   public annealer = new Annealer(this.schedule, { maxIters: 1000 });
 
   constructor() {
     super();
     setTimeout(
-      () => {
+      () => { // To prepopulate things for quick testing:
         // this.schedule.randomizeSlots();
         // this.schedule.randomizeVotes();
         // this.schedule.randomizeRanks();
