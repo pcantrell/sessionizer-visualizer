@@ -21,7 +21,7 @@
 
           <td class="focused placeholder" v-if="options.showFocusedShape && focus">
             <div class="big shape-block-row">
-              <div class="big shape-block" v-for="session in groupedSessions(focus)[timeslotID]">
+              <div class="big shape-block" v-for="session in schedule.groupedSessions(focus)[timeslotID]">
                 <div class="ranking" v-if="options.showRanking">
                   {{ focus.votes.indexOf(schedule.sessions.indexOf(session)) + 1 }}
                 </div>
@@ -46,30 +46,30 @@
           </th>
           <td v-for="session, sessionID in schedule.sessions"
               :class="{ vote: true, selected: participant.votes.includes(sessionID)}"
-              @click="toggleVote(participant, sessionID)">
+              @click="participant.toggleVote(sessionID)">
             {{ schedule.timeslots[session.timeslotID] }}
           </td>
 
           <template v-if="options.showNaiveScores">
             <td class="scoring numeric naive">
-              {{ naiveScore(participant) }}
+              {{ schedule.naiveScore(participant) }}
             </td>
             <td class="scoring numeric naive naive-percent">
               <span v-if="participant.votes.length > 0">
-                {{ naivePercent(participant) }}%
+                {{ schedule.naivePercent(participant) }}%
               </span>
             </td>
           </template>
 
           <td class="scoring" v-if="options.showMiniShapes">
             <div class="small shape-block-row" v-for="timeslot, timeslotID in schedule.timeslots">
-              <div class="small shape-block" v-for="session in groupedSessions(participant)[timeslotID]"/>
+              <div class="small shape-block" v-for="session in schedule.groupedSessions(participant)[timeslotID]"/>
             </div>
           </td>
 
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
-              {{ formatFixed(shapeScore(participant), 2) }}
+              {{ formatFixed(schedule.shapeScore(participant), 3) }}
             </td>
           </template>
 
@@ -78,15 +78,15 @@
         <tr class="totals">
           <td class="placeholder"></td>
           <td v-for="session, sessionID in schedule.sessions">
-            {{ voteCount(sessionID) }}
+            {{ schedule.voteCount(sessionID) }}
           </td>
 
           <template v-if="options.showNaiveScores">
             <td class="scoring numeric naive">
-              {{ formatFixed(averageOverParticipants(naiveScore), 1) }}
+              {{ formatFixed(schedule.averageOverParticipants(schedule.naiveScore), 1) }}
             </td>
             <td class="scoring numeric naive naive-percent">
-              {{ formatFixed(averageOverParticipants(naivePercent), 0) }}%
+              {{ formatFixed(schedule.averageOverParticipants(schedule.naivePercent), 0) }}%
             </td>
           </template>
 
@@ -95,7 +95,7 @@
 
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
-              {{ formatFixed(averageOverParticipants(shapeScore), 2) }}
+              {{ formatFixed(schedule.averageOverParticipants(schedule.shapeScore), 3) }}
             </td>
           </template>
         </tr>
@@ -105,7 +105,7 @@
 
     <div class="complaint-pairs" v-if="options.showPairs">
       <div v-for="participant in schedule.participants">
-        <div v-for="sessionGroup in groupedSessions(participant)">
+        <div v-for="sessionGroup in schedule.groupedSessions(participant)">
           <div v-for="session0, index in sessionGroup">
             <div v-for="session1 in sessionGroup.slice(index + 1)" class="complaint">
               ☹️ <b>{{ participant.name }}</b>: {{ session0.name }} vs {{ session1.name }}
@@ -120,15 +120,15 @@
     </div>
 
     <div class="control-panel">
-      <button @click="clear()">clear</button>
-      <button @click="randomizeSlots()">rand slots</button>
-      <button @click="randomizeVotes()">rand votes</button>
+      <button @click="schedule.clear()">clear</button>
+      <button @click="schedule.randomizeSlots()">rand slots</button>
+      <button @click="schedule.randomizeVotes()">rand votes</button>
       <Toggle v-model="options.showNaiveScores" label="naive" />
       <Toggle v-model="options.showFocusedShape" label="focused shape" />
       <Toggle v-model="options.showMiniShapes" label="mini shapes" />
       <Toggle v-model="options.showPairs" label="pairs" />
       <Toggle v-model="options.showRanking" label="rank" />
-      <button @click="randomizeRanks()">rand rank</button>
+      <button @click="schedule.randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
       <button @click="anneal()">anneal</button>
     </div>
@@ -139,6 +139,10 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import Toggle from './components/Toggle.vue';
+import Session from './model/Session';
+import Participant from './model/Participant';
+import Schedule from './model/Schedule';
+import Util from './util';
 
 @Component({
   components: {
@@ -147,7 +151,7 @@ import Toggle from './components/Toggle.vue';
 })
 
 export default class App extends Vue {
-  public schedule = {
+  public schedule = new Schedule({
     participants: [
       "Sally",
       "Fred",
@@ -158,7 +162,8 @@ export default class App extends Vue {
       "Vicky",
       "Yusuf",
       "Alvin",
-    ].map(makeParticipant),
+    ],
+
     sessions: [
       "👻",
       "👾",
@@ -172,9 +177,10 @@ export default class App extends Vue {
       "🧷",
       "💃🏻",
       "🧩",
-    ].map(makeSession),
+    ],
+
     timeslots: ["1:00", "2:00", "3:00", "4:00"],
-  };
+  });
   public focus: Participant | null = null;
 
   public options = {
@@ -196,77 +202,16 @@ export default class App extends Vue {
     super();
     setTimeout(
       () => {
-        // this.randomizeSlots();
-        // this.randomizeVotes();
-        // this.randomizeRanks();
-        // this.options.showNaiveScores = true;
-        // this.options.showFocusedShape = true;
-        // this.options.showMiniShapes = true;
-        // this.options.showPairs = true;
-        // this.options.showRanking = true;
-        // this.options.showShapeScores = true;
+        this.schedule.randomizeSlots();
+        this.schedule.randomizeVotes();
+        this.schedule.randomizeRanks();
+        this.options.showNaiveScores = true;
+        this.options.showFocusedShape = true;
+        this.options.showMiniShapes = true;
+        this.options.showPairs = true;
+        this.options.showRanking = true;
+        this.options.showShapeScores = true;
       }, 0.2);
-  }
-
-  public toggleVote(participant: Participant, sessionID: number) {
-    if (participant.votes.includes(sessionID)) {
-      participant.votes = participant.votes.filter((id) => id !== sessionID);
-    } else {
-      participant.votes.push(sessionID);
-    }
-  }
-
-  public groupedSessions(participant: Participant): Session[][] {
-    const results: Session[][] = this.schedule.timeslots.map((_) => []);
-    for (const sessionIndex of participant.votes) {
-      const session = this.schedule.sessions[sessionIndex];
-      if (session.timeslotID != null) {
-        results[session.timeslotID].push(session);
-      }
-    }
-    return results;
-  }
-
-  public voteCount(sessionID: number): number {
-    return this.schedule.participants
-      .filter((participant) => participant.votes.includes(sessionID))
-      .length;
-  }
-
-  public averageOverParticipants(metric: (p: Participant) => number | null): number | null {
-    let sum = 0;
-    let count = 0;
-    for (const participant of this.schedule.participants) {
-      const value = metric(participant);
-      if (value && !isNaN(value)) {
-        sum += value;
-        count += 1;
-      }
-    }
-    return (count === 0) ? null : sum / count;
-  }
-
-  public naiveScore(participant: Participant): number {
-    return this.groupedSessions(participant).filter((a) => a.length > 0).length;
-  }
-
-  public naivePercent(participant: Participant): number {
-    return Math.round(
-      this.naiveScore(participant) / participant.votes.length * 100);
-  }
-
-  public shapeScore(participant: Participant): number | null {
-    //       2 * k / (size.to_f * (k + 1))
-    const sessionCount = participant.votes.length;
-    if (sessionCount === 0) {
-      return null;
-    }
-
-    let total = 0;
-    for (const sessionGroup of this.groupedSessions(participant)) {
-      total += 2 * sessionGroup.length / (sessionCount * (sessionGroup.length + 1));
-    }
-    return total;
   }
 
   public formatFixed(value: number | null | undefined, precision: number) {
@@ -286,36 +231,6 @@ export default class App extends Vue {
     return this.focus && this.focus.votes.includes(sessionID) || false;
   }
 
-  public clear() {
-    for (const session of this.schedule.sessions) {
-      session.timeslotID = undefined;
-    }
-    for (const participant of this.schedule.participants) {
-      participant.votes = [];
-    }
-  }
-
-  public randomizeSlots() {
-    for (const session of this.schedule.sessions) {
-      session.timeslotID = Math.floor(Math.random() * this.schedule.timeslots.length);
-    }
-  }
-
-  public randomizeVotes() {
-    for (const participant of this.schedule.participants) {
-      const threshold = Math.random() * 0.5 + 0.1;
-      participant.votes = this.schedule.sessions
-        .map((s, index) => index)
-        .filter((x) => Math.random() < threshold);
-    }
-  }
-
-  public randomizeRanks() {
-    for (const participant of this.schedule.participants) {
-      this.shuffle(participant.votes);
-    }
-  }
-
   public anneal() {
     if (this.annealing) {
       this.annealing = false;
@@ -325,36 +240,16 @@ export default class App extends Vue {
       window.console.log(
         "Reset to",
         this.bestScore,
-        this.averageOverParticipants(this.shapeScore),
+        this.schedule.averageOverParticipants(this.schedule.shapeScore),
         JSON.stringify(this.extractTimeslotIDs()));
       return;
     }
 
     this.annealing = true;
-    this.bestScore = this.averageOverParticipants(this.shapeScore) || 0;
+    this.bestScore = this.schedule.averageOverParticipants(this.schedule.shapeScore) || 0;
     this.bestSchedule = this.extractTimeslotIDs();
     this.annealingIters = 0;
     this.annealStep();
-  }
-
-  public randomIntLessThan(max: number): number {
-    return Math.floor(Math.random() * max);
-  }
-
-  public randomInt(min: number, max: number): number {
-    return this.randomIntLessThan(max - min) + min;
-  }
-
-  public shuffle(array: any[]) {
-    array.forEach((_, index0) => {
-      const index1 = this.randomInt(index0, array.length);
-      [array[index0], array[index1]] = [array[index1], array[index0]];
-    });
-    array.push(array.pop()); // force update
-  }
-
-  public sample(array: any[]) {
-    return array[this.randomIntLessThan(array.length)];
   }
 
   public annealStep() {
@@ -362,12 +257,12 @@ export default class App extends Vue {
       return;
     }
 
-    const prevScore = this.averageOverParticipants(this.shapeScore) || 0;
-    const session = this.sample(this.schedule.sessions);
+    const prevScore = this.schedule.averageOverParticipants(this.schedule.shapeScore) || 0;
+    const session = Util.sample(this.schedule.sessions);
     const prevTimeslotID = session.timeslotID;
-    session.timeslotID = this.randomIntLessThan(this.schedule.timeslots.length);
+    session.timeslotID = Util.randomIntLessThan(this.schedule.timeslots.length);
 
-    const score = this.averageOverParticipants(this.shapeScore) || 0;
+    const score = this.schedule.averageOverParticipants(this.schedule.shapeScore) || 0;
     if (score > this.bestScore) {
       window.console.log(
         "New best",
@@ -390,30 +285,6 @@ export default class App extends Vue {
   public extractTimeslotIDs() {
     return this.schedule.sessions.map((s) => s.timeslotID);
   }
-}
-
-interface Session {
-  name: string;
-  timeslotID?: number;
-}
-
-interface Participant {
-  name: string;
-  votes: number[];
-}
-
-function makeSession(name: string): Session {
-  return {
-    name,
-    timeslotID: undefined,
-  };
-}
-
-function makeParticipant(name: string): Participant {
-  return {
-    name,
-    votes: [],
-  };
 }
 
 </script>
@@ -552,6 +423,7 @@ function makeParticipant(name: string): Participant {
 }
 
 .control-panel {
+  background: white;
   border: 0.5px solid #ccc;
   border-radius: 3px;
   position: fixed;
