@@ -6,17 +6,9 @@
       :options="options"
       :annealerBestScore="annealer.bestScore" />
 
-    <div class="complaint-pairs" v-if="options.showPairs">
-      <div v-for="participant in schedule.participants">
-        <div v-for="sessionGroup in schedule.groupedSessions(participant)">
-          <div v-for="session0, index in sessionGroup">
-            <div v-for="session1 in sessionGroup.slice(index + 1)" class="complaint">
-              ☹️ <b>{{ participant.name }}</b>: {{ session0.name }} vs {{ session1.name }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ComplaintPairs
+      :schedule="schedule"
+      :options="options" />
 
     <div class="control-panel">
       <button @click="schedule.clear()">clear</button>
@@ -38,8 +30,9 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator';
 
-import ScheduleGrid from './components/ScheduleGrid.vue';
-import Toggle from './components/Toggle.vue';
+import ScheduleGrid   from './components/ScheduleGrid.vue';
+import ComplaintPairs from './components/ComplaintPairs.vue';
+import Toggle         from './components/Toggle.vue';
 
 import Schedule from './model/Schedule';
 import Annealer from './helpers/Annealer';
@@ -47,6 +40,7 @@ import Annealer from './helpers/Annealer';
 @Component({
   components: {
     ScheduleGrid,
+    ComplaintPairs,
     Toggle,
   },
 })
@@ -125,15 +119,6 @@ export default class App extends Vue {
     color: #2c3e50;
     margin-top: 1em;
     font-size: 12px;
-  }
-
-  .complaint-pairs {
-    position: fixed;
-    right: 1em;
-    top: 1em;
-    width: 12em;
-    height: 100%;
-    font-size: 120%;
   }
 
   .control-panel {
