@@ -96,6 +96,12 @@
           <template v-if="options.showShapeScores">
             <td class="scoring numeric shape">
               {{ formatFixed(schedule.averageScore(schedule.shapeScore), 3) }}
+              <div class="best" v-if="this.bestScore > 0">
+                <div class="side-label">
+                  Best:
+                </div>
+                {{ formatFixed(this.bestScore, 3) }}
+              </div>
             </td>
           </template>
         </tr>
@@ -113,10 +119,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div v-if="this.bestScore > 0" class="best-score">
-      Best score: {{ this.bestScore }}
     </div>
 
     <div class="control-panel">
@@ -202,15 +204,15 @@ export default class App extends Vue {
     super();
     setTimeout(
       () => {
-        this.schedule.randomizeSlots();
-        this.schedule.randomizeVotes();
+        // this.schedule.randomizeSlots();
+        // this.schedule.randomizeVotes();
         // this.schedule.randomizeRanks();
-        this.options.showNaiveScores = true;
-        this.options.showFocusedShape = true;
-        this.options.showMiniShapes = true;
-        this.options.showPairs = true;
-        this.options.showRanking = true;
-        this.options.showShapeScores = true;
+        // this.options.showNaiveScores = true;
+        // this.options.showFocusedShape = true;
+        // this.options.showMiniShapes = true;
+        // this.options.showPairs = true;
+        // this.options.showRanking = true;
+        // this.options.showShapeScores = true;
       }, 0.2);
   }
 
@@ -361,8 +363,19 @@ export default class App extends Vue {
       padding-top: 0.5em;
       position: relative;
       top: -3px;
+      vertical-align: top;
       &.scoring {
         border-top: 0.5px solid #bbb;
+      }
+    }
+    .best {
+      margin-top: 0.5em;
+      .side-label {
+        display: inline-block;
+        font-weight: normal;
+        width: 0;
+        position: relative;
+        left: -100%;
       }
     }
     &.focus-enabled {
@@ -453,7 +466,4 @@ export default class App extends Vue {
   }
 }
 
-.best-score {
-  margin-top: 2em;
-}
 </style>
