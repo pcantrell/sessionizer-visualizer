@@ -21,7 +21,7 @@
       <Toggle v-model="options.showRanking" label="focused rank" />
       <button @click="schedule.randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
-      <button @click="annealer.toggle()" :class="{ active: annealer.running }">anneal</button>
+      <button @click="annealer.toggle()" :class="{ running: annealer.running }">anneal</button>
     </div>
 
     <div class="hints">
@@ -195,11 +195,17 @@ export default class App extends Vue {
       border: 0.5px solid #888;
       border-radius: 1ex;
       box-shadow: 1px 1px 2px rgba(0,0,0,0.15);
-      &.active {
+      &:active {
+        background: #ccc;
+      }
+      &.running {
         background: #108800;
         color: white;
         font-weight: bold;
         border-color: black;
+        &:active {
+          background: #444;
+        }
       }
     }
   }
