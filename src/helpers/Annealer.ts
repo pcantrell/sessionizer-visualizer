@@ -14,7 +14,9 @@ export default class Annealer {
 
   private schedule: Schedule;
   private iters = 0;
-  private maxIters = 1000;
+  private maxIters = 0;
+  private maxIterCycleStart = 50;
+  private maxIterCycleEnd = 5000;
 
   constructor(schedule: Schedule, opts: { maxIters: number }) {
     this.schedule = schedule;
@@ -36,6 +38,11 @@ export default class Annealer {
   }
 
   public start() {
+    this.maxIters = this.maxIterCycleStart;
+    this.startNextCycle();
+  }
+
+  private startNextCycle() {
     if (this.bestResult && this.bestResult.isOptimal) {
       stop();
       return;
@@ -83,7 +90,16 @@ export default class Annealer {
     this.iters += 1;
     if (this.iters > this.maxIters) {
       this.stop();
-      this.start();
+
+      this.maxIters = Math.round(this.maxIters * 3 / 2);
+      if (this.maxIters > this.maxIterCycleEnd) {
+        while (this.maxIters > this.maxIterCycleStart) {
+          this.maxIters = Math.round(this.maxIters / 2);
+        }
+        this.maxIters *= 2;
+      }
+
+      this.startNextCycle();
     }
     setTimeout(() => this.step(), 1);
   }
