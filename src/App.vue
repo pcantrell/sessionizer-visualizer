@@ -22,6 +22,10 @@
       <button @click="schedule.randomizeRanks()">rand rank</button>
       <Toggle v-model="options.showShapeScores" label="scores" />
       <button @click="annealer.toggle()" :class="{ running: annealer.running }">anneal</button>
+      <div class="annealer-state" v-if="annealer.running">
+        <ProgressBar class="annealer-progress" :progress="annealer.iters / annealer.maxIters" />
+        <div class="iter-count">{{ annealer.maxIters }} iters</div>
+      </div>
     </div>
 
     <div class="hints">
@@ -75,6 +79,7 @@ import { Component, Vue, Watch } from 'vue-property-decorator';
 import ScheduleGrid   from './components/ScheduleGrid.vue';
 import ComplaintPairs from './components/ComplaintPairs.vue';
 import Toggle         from './components/Toggle.vue';
+import ProgressBar    from './components/ProgressBar.vue';
 
 import Schedule from './model/Schedule';
 import Options  from './model/Options';
@@ -86,6 +91,7 @@ import Annealer from './helpers/Annealer';
     ScheduleGrid,
     ComplaintPairs,
     Toggle,
+    ProgressBar,
   },
 })
 
@@ -206,6 +212,21 @@ export default class App extends Vue {
         &:active {
           background: #444;
         }
+      }
+    }
+
+    .annealer-state {
+      width: 6em;
+      display: inline-block;
+      position: relative;
+      top: 0.4em;
+      margin-top: -2em;
+      .annealer-progress {
+      }
+      .iter-count {
+        margin-top: 0.2em;
+        font-size: 90%;
+        text-align:center;
       }
     }
   }
