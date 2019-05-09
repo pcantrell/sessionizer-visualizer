@@ -103,12 +103,12 @@
       <template v-if="options.showShapeScores">
         <td class="scoring numeric shape">
           {{ formatFixed(schedule.averageScore(schedule.shapeScore), 3) }}
-          <div class="best" v-if="annealerBestScore > 0">
+          <div class="best" v-if="optimizerResult">
             <div class="side-label">
-              Best:
+              {{ optimizerResult.isOptimal ? "Found optimal" : "Best so far" }}:
             </div>
             <div :class="{ 'score': true, 'new-best-score': newBestScore }">
-              {{ formatFixed(annealerBestScore, 3) }}
+              {{ formatFixed(optimizerResult.score, 3) }}
             </div>
           </div>
         </td>
@@ -125,11 +125,13 @@ import Session     from '../model/Session';
 import Participant from '../model/Participant';
 import Options     from '../model/Options';
 
+import OptimizationResult from '../helpers/Annealer';
+
 @Component
 export default class ScheduleGrid extends Vue {
   @Prop() private schedule!: Schedule;
   @Prop() private options!: Options;
-  @Prop() private annealerBestScore!: number;
+  @Prop() private optimizerResult: OptimizationResult | undefined;
 
   private focus: Participant | null = null;
 
@@ -152,9 +154,9 @@ export default class ScheduleGrid extends Vue {
     }
   }
 
-  @Watch('annealerBestScore')
-  public onNewBestScore(newValue: number, oldValue: number) {
-    if (oldValue) {
+  @Watch('optimizerResult')
+  public onNewBestScore(newValue: any, oldValue: any) {
+    if (oldValue && newValue) {
       this.newBestScore = false;
       setTimeout(() => this.newBestScore = true, 0.01);
     }
@@ -249,9 +251,10 @@ export default class ScheduleGrid extends Vue {
     .side-label {
       display: inline-block;
       font-weight: normal;
-      width: 0;
+      width: 10em;
+      margin-left: -10em;
       position: relative;
-      left: -120%;
+      left: -1em;
     }
     .score {
       display: inline-block;

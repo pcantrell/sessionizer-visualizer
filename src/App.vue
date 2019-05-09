@@ -4,7 +4,7 @@
     <ScheduleGrid
       :schedule="schedule"
       :options="options"
-      :annealerBestScore="annealer.bestScore" />
+      :optimizerResult="annealer.bestResult" />
 
     <ComplaintPairs
       :schedule="schedule"

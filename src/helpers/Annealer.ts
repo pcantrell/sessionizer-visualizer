@@ -1,11 +1,16 @@
 import Schedule from '../model/Schedule';
 import Util from './util';
+import Vue from 'vue';
+
+export interface OptimizationResult {
+  score: number;
+  isOptimal: boolean;
+  schedule: Array<number | undefined>;
+}
 
 export default class Annealer {
-
   public running = false;
-  public bestScore = 0;
-  public bestSchedule: Array<number | undefined> = [];
+  public bestResult: OptimizationResult | undefined;
 
   private schedule: Schedule;
   private iters = 0;
@@ -17,8 +22,9 @@ export default class Annealer {
   }
 
   public clear() {
-    this.bestScore = 0;
-    this.bestSchedule = [];
+    // For reasons unknown, Vue doesn't pick up direct assignment
+    // to this.bestResult here, even though it does below in step()
+    Vue.set(this, 'bestResult', undefined);
   }
 
   public toggle() {
@@ -30,19 +36,23 @@ export default class Annealer {
   }
 
   public start() {
+    if (this.bestResult && this.bestResult.isOptimal) {
+      stop();
+      return;
+    }
+
     this.running = true;
-    this.bestScore = this.schedule.averageScore(this.schedule.shapeScore) || 0;
-    this.bestSchedule = this.extractTimeslotIDs();
     this.iters = 0;
     this.step();
   }
 
   public stop() {
     this.running = false;
-    this.bestSchedule.forEach((timeslotID, index) => {
-      this.schedule.sessions[index].timeslotID = timeslotID;
-    });
-    return;
+    if (this.bestResult) {
+      this.bestResult.schedule.forEach((timeslotID, index) => {
+        this.schedule.sessions[index].timeslotID = timeslotID;
+      });
+    }
   }
 
   public step() {
@@ -56,9 +66,16 @@ export default class Annealer {
     session.timeslotID = Util.randomIntLessThan(this.schedule.timeslots.length);
 
     const score = this.schedule.averageScore(this.schedule.shapeScore) || 0;
-    if (score > this.bestScore) {
-      this.bestScore = score;
-      this.bestSchedule = this.extractTimeslotIDs();
+    if (!this.bestResult || score > this.bestResult.score) {
+      this.bestResult = {
+        score,
+        isOptimal: this.schedule.isOptimal(),
+        schedule: this.extractTimeslotIDs(),
+      };
+      if (this.bestResult.isOptimal || false) {
+        this.stop();
+        return;
+      }
     } else if (score < prevScore && Math.random() < this.iters / this.maxIters) {
       session.timeslotID = prevTimeslotID;
     }

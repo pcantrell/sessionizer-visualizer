@@ -67,6 +67,21 @@ export default class Schedule {
       .length;
   }
 
+  public isOptimal(): boolean {
+    for (const participant of this.participants) {
+      let min = Infinity;
+      let max = 0;
+      for (const sessionGroup of this.groupedSessions(participant)) {
+        min = Math.min(min, sessionGroup.length);
+        max = Math.max(max, sessionGroup.length);
+        if (max - min > 1) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   // –––––– Scoring ––––––
 
   public naiveScore(participant: Participant): number {
