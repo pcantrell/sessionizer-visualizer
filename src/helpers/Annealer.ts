@@ -76,7 +76,7 @@ export default class Annealer {
         this.stop();
         return;
       }
-    } else if (score < prevScore && Math.random() < this.iters / this.maxIters) {
+    } else if (!this.shouldTransition(prevScore, score)) {
       session.timeslotID = prevTimeslotID;
     }
 
@@ -86,6 +86,14 @@ export default class Annealer {
       this.start();
     }
     setTimeout(() => this.step(), 1);
+  }
+
+  private get currentTemperature(): number {
+    return Math.exp(-this.iters / this.maxIters * 10);
+  }
+
+  private shouldTransition(oldScore: number, newScore: number): boolean {
+    return Math.exp((newScore - oldScore) / this.currentTemperature) > Math.random();
   }
 
   public extractTimeslotIDs() {
