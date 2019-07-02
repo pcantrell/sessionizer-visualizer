@@ -44,11 +44,12 @@
         <a href="https://github.com/pcantrell/sessionizer-visualizer">Source code for this visualization</a>
       </div>
       <div class="link">
-        <a href="https://youtu.be/QsMWMRzBsG0?t=23">Paul’s 2014 talk on scheduling with simulated annealing</a>
-        (uses the “naive” scoring below)
+        <a href="https://www.youtube.com/watch?v=0TvvZyGuC48">Paul’s 2019 talk on scheduler improvements that explains what you’re seeing here</a>
+        (audio and video aren’t great; sorry)
       </div>
       <div class="link">
-        Paul’s 2019 talk on scheduler improvements, where this visualization originates: <b>forthcoming!</b>
+        <a href="https://youtu.be/QsMWMRzBsG0?t=23">Paul’s 2014 talk on scheduling with simulated annealing</a>
+        (uses the “naive” scoring below)
       </div>
       <div class="link">
         <a href="https://sessions.minnestar.org">The real-life Minnebar sessionizer</a>
@@ -169,7 +170,11 @@ export default class App extends Vue {
   }
 
   a {
+    font-weight: 600;
     text-decoration: none;
+    &:hover, &:active {
+      text-decoration: underline;
+    }
   }
 
   .control-panel {
