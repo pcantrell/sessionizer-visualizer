@@ -1,29 +1,12 @@
 # sessionizer-visualizer
 
-## Project setup
-```
-yarn install
-```
+An visualization of the [MinneBar](https://minnestar.org/minnebar/) session scheduler's algorithm.
 
-### Compiles and hot-reloads for development
-```
-yarn run serve
-```
+👉 **[Try it live](https://pcantrell.github.io/sessionizer-visualizer/)** 👈
 
-### Compiles and minifies for production
-```
-yarn run build
-```
+## Background
 
-### Run your tests
-```
-yarn run test
-```
-
-### Lints and fixes files
-```
-yarn run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+- [The talk for which I made this visualization](https://www.youtube.com/watch?v=0TvvZyGuC48)
+- [Earlier talk with more info about simulated annealing](https://youtu.be/QsMWMRzBsG0?t=23)
+- [The real-life Minnebar sessionizer](https://sessions.minnestar.org/home)
+- [Source code for the real-life schedule](https://github.com/minnestar/sessionizer/tree/master/src/lib/scheduling)
